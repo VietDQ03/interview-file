@@ -74,7 +74,74 @@ Ví dụ gây blocking:
 #### Một câu chốt
 
 “Trong Node, đồng bộ/bất đồng bộ là cách ta **tổ chức việc chờ**. Bất đồng bộ giúp tận dụng thời gian chờ I/O để xử lý việc khác, nhưng nếu công việc là CPU-bound thì cần worker threads hoặc scale bằng multi-process để tránh block event loop.”
+### EXAMPLE 
+synchornous 
+function Test() {
+  console.log(1)
+  console.log(2)
+  console.log(3)
+}
+Test() 
+output 1 , 2 , 3
+asynchornous
+callback, promise, async/await 
+Way 1: callback 
+                                      function muaDo(callback) {
+                                            console.log("Đi mua đồ...");
 
+                                            setTimeout(() => {
+                                              console.log("Mua xong rồi");
+                                              callback(); // gọi sau khi xong
+                                            }, 2000);
+                                          }
+
+                                          muaDo(() => {
+                                            console.log("Ok nhận đồ");
+                                          });
+        OUTPUT print (đi mua đồ ..., mua xong rồi, ok nhận đồ)                                        
+Way 2: promise
+        function fetchUser() {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              console.log("Lấy user...");
+              resolve({ id: 1, name: "Việt" });
+            }, 1000);
+          });
+        }
+
+        function getOrders(userId) {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              console.log("Lấy orders của user:", userId);
+              resolve([{ id: 101 }, { id: 102 }]);
+            }, 1000);
+          });
+        }
+
+        function getPayment(orderId) {
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              console.log("Lấy payment của order:", orderId);
+              resolve({ id: 5001, amount: 200 });
+            }, 1000);
+          });
+        }
+        fetchUser()
+          .then(user => getOrders(user.id))
+          .then(orders => getPayment(orders[0].id))
+          .then(payment => console.log(payment))
+          .catch(err => console.log(err));
+WAY 3 : async/ await
+          async function main() {
+              const user = await fetchUser();
+              const orders = await getOrders(user.id);
+              const payment = await getPayment(orders[0].id);
+
+              console.log("Payment:", payment);
+          }
+
+          main();
+   
 2. NestJS
 NestJS là framework backend cho nodeJS được xây dựng bằng typescript và lấy cảm hứng từ angular kết hợp các kiểu lập trình hướng OOP, FP, FRP
 Điểm mạnh của nestJS:
