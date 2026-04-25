@@ -1,16 +1,89 @@
-1. NodeJS 
-NodeJS là một runtime JS dựa trên V8 thiết kế quanh event-loop và non-block I/O tối ưu cho concurrency triển khai các bài toán I/O bound. Điểm mạnh của NodeJS là mô hình event-driven kết hợp cùng với event-loop, giúp xử lý workload I/O bound hiểu quả nhờ non-blocking I/O. Khi gặp các I/O như DB, file, network thì JS thread sẽ không đứng chờ mà sẽ chuyển cho libuv/OS xử lý, khi có kết quả callback sẽ đưa lại về queue đưa cho event-loop xử lý 
-NodeJS là single thread thì nó chỉ đúng với code trên mainJS. Trên thực tế thì nodeJS tận dụng đa luồng ngầm của libuv cho I/O và cho phép chủ động tạo worker thread khi cần tinhs toán nặng, I/O bound tận dụng async, còn cpu bound dùng worker threads 
-Khi scale thường dùng cluster/multiple process mỗi process 1 event-loop 
-2. NestJS 
-NestJS là framework backend cho nodeJS được xây dựng bằng typescript và lấy cảm hứng từ angular kết hợp các kiểu lập trình hướng OOP, FP, FRP 
-Điểm mạnh của nestJS: 
+1. NodeJS
+   NodeJS là một runtime JS dựa trên V8 thiết kế quanh event-loop và non-block I/O tối ưu cho concurrency triển khai các bài toán I/O bound. Điểm mạnh của NodeJS là mô hình event-driven kết hợp cùng với event-loop, giúp xử lý workload I/O bound hiểu quả nhờ non-blocking I/O. Khi gặp các I/O như DB, file, network thì JS thread sẽ không đứng chờ mà sẽ chuyển cho libuv/OS xử lý, khi có kết quả callback sẽ đưa lại về queue đưa cho event-loop xử lý
+   NodeJS là single thread thì nó chỉ đúng với code trên mainJS. Trên thực tế thì nodeJS tận dụng đa luồng ngầm của libuv cho I/O và cho phép chủ động tạo worker thread khi cần tinhs toán nặng, I/O bound tận dụng async, còn cpu bound dùng worker threads
+   Khi scale thường dùng cluster/multiple process mỗi process 1 event-loop
+
+### 1.1. Định nghĩa đúng thuật ngữ
+
+- **Đồng bộ (Synchronous)**  
+  Code chạy tuần tự, hàm gọi (_caller_) sẽ chờ hàm hiện tại thực thi xong rồi mới tiếp tục.
+
+- **Bất đồng bộ (Asynchronous)**  
+  Hàm gọi (_caller_) không chờ kết quả ngay, mà đăng ký cách nhận kết quả sau (callback, Promise, event, stream).
+
+### 1.2. Nhầm lẫn phổ biến: Async ≠ Song song
+
+- **Async** → xử lý **thời gian chờ (waiting)**, chủ yếu với I/O
+- **Parallel** → chạy **đồng thời** trên nhiều thread/core
+
+> Trong Node.js:
+
+- I/O có thể async
+- Nhưng **JavaScript execution vẫn chủ yếu chạy trên 1 thread**
+
+### 1.3. Blocking trong Node là gì?
+
+- **Blocking event loop** = làm thread chính bị chiếm quá lâu
+
+Hậu quả:
+
+- Callback I/O bị delay
+- Timer bị trễ
+- Latency tăng
+
+Ví dụ gây blocking:
+
+- `fs.readFileSync`
+- Sync crypto
+- Regex phức tạp
+- Loop xử lý lớn
+
+### 1.4. 2 trục tư duy khi nói về Sync / Async
+
+#### (1) Góc nhìn API (lập trình)
+
+- **Sync API**
+  - Trả kết quả ngay
+  - Có thể `throw error`
+
+- **Async API**
+  - Trả về `Promise` hoặc dùng `callback`
+  - Không block thread
+
+---
+
+#### (2) Góc nhìn hệ thống (workload)
+
+- **I/O-bound**
+  - Ví dụ: DB, API, file
+  - Async giúp tăng **concurrency**
+
+- **CPU-bound**
+  - Ví dụ: loop lớn, parse JSON nặng, xử lý thuật toán
+  - Async **không giúp** nếu vẫn chạy trên JS thread
+  - Cần:
+    - Worker Threads
+    - Multi-process
+    - Service riêng
+#### Trade-off và rủi ro (điểm middle hay nói)
+
+- **Error handling**: callback hell vs Promise chaining vs `async/await` (try/catch).
+- **Backpressure**: xử lý stream cần tôn trọng `drain`/`pipeline` để tránh phình memory.
+- **Microtask starvation**: lạm dụng `process.nextTick`/Promise chain khiến I/O bị đói.
+
+#### Một câu chốt
+
+“Trong Node, đồng bộ/bất đồng bộ là cách ta **tổ chức việc chờ**. Bất đồng bộ giúp tận dụng thời gian chờ I/O để xử lý việc khác, nhưng nếu công việc là CPU-bound thì cần worker threads hoặc scale bằng multi-process để tránh block event loop.”
+
+2. NestJS
+NestJS là framework backend cho nodeJS được xây dựng bằng typescript và lấy cảm hứng từ angular kết hợp các kiểu lập trình hướng OOP, FP, FRP
+Điểm mạnh của nestJS:
   - Kiến trúc rõ ràng
   - Dependency Injection
-  - Modular Architechture 
-  - Dễ scale cho hệ thông lớn  
-3. Request Lifecycle trong NestJS 
-request --> middleware --> guard --> Interceptor(before) --> Pipe --> Controller --> Service --> Interceptor(after) --> exception filter 
+  - Modular Architechture
+  - Dễ scale cho hệ thông lớn
+3. Request Lifecycle trong NestJS
+request --> middleware --> guard --> Interceptor(before) --> Pipe --> Controller --> Service --> Interceptor(after) --> exception filter
 
 ┌─────────────────────────────────────────────────────────────┐
 │ HTTP Request đến Express/Fastify                            │
@@ -99,7 +172,7 @@ bước 2–7    ║  • Chuẩn hóa: { statusCode, message,  ║
 ║                                                               ║
 ║ • Thứ tự Interceptor: đăng ký trước → "before" chạy trước,    ║
 ║   "after" chạy sau (onion model, giống middleware stack)      ║
-╚═══════════════════════════════════════════════════════════════╝ 
+╚═══════════════════════════════════════════════════════════════╝
 
 # Vòng đời một Request trong NestJS
 
@@ -178,15 +251,17 @@ bước 2–7    ║  • Chuẩn hóa: { statusCode, message,  ║
 ## Tổng kết luồng
 
 ```
-Request 
-  → Middleware           (raw-level, chưa biết route)
-  → Guard                (chặn quyền, đọc metadata)
-  → Interceptor (before) (log, cache check, enrich)
-  → Pipe                 (transform + validate input)
-  → Controller Handler   (gọi service, xử lý nghiệp vụ)
-  → Interceptor (after)  (transform response, log)
-  → Exception Filter     (bắt lỗi ở bất kỳ tầng nào)
-  → Response
+
+Request
+→ Middleware (raw-level, chưa biết route)
+→ Guard (chặn quyền, đọc metadata)
+→ Interceptor (before) (log, cache check, enrich)
+→ Pipe (transform + validate input)
+→ Controller Handler (gọi service, xử lý nghiệp vụ)
+→ Interceptor (after) (transform response, log)
+→ Exception Filter (bắt lỗi ở bất kỳ tầng nào)
+→ Response
+
 ```
 
 **Nguyên tắc phân chia trách nhiệm**:
@@ -196,3 +271,4 @@ Request
 - Format lỗi → **Exception Filter**.
 - Parse body, CORS, helmet → **Middleware**.
 - Business logic → **Service** (không phải Controller).
+```
